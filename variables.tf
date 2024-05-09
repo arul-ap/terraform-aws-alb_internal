@@ -16,10 +16,26 @@ variable "alb" {
     name              = string
     subnet_id         = list(string)
     security_group_id = list(string)
-    default_cert_arn  = string
-    default_tg        = string
   })
 }
+
+variable "alb_listeners_http" {
+  description = "Map of listeners for internal ALB to support multiple ports (HTTP)"
+  type = map(object({
+    port = number
+    default_tg = string
+  }))
+}
+
+variable "alb_listeners_https" {
+  description = "Map of listeners for internal ALB to support multiple ports (HTTPS)"
+  type = map(object({
+    port = number
+    default_cert_arn  = string
+    default_tg = string
+  }))
+}
+
 variable "target_groups" {
   description = "Target Groups"
   type = map(object({
@@ -30,14 +46,19 @@ variable "target_groups" {
     target_id = list(string)
   }))
 }
+
 variable "certs_arn" {
   description = "Additional Certificates to configure into ALB"
-  type        = map(string)
+  type        = map(object({
+    listener = string
+    cert_arn = string
+  }))
   default     = {}
 }
 variable "rules" {
   description = "ALB rules"
   type = map(object({
+    listener = string
     priority = number
     condition = object({
       host_header  = optional(string, null)

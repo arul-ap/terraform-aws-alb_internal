@@ -13,15 +13,15 @@ provider "aws" {
   }
 }
 
-module "alb_public" {
-  source = "arul-ap/alb_public/aws"
+module "alb_internal" {
+  source = "arul-ap/alb_internal/aws"
   org    = "abc"
   proj   = "proj-x"
   env    = "dev"
 
   alb = {
     name              = "frond-end"
-    subnet_id         = [module.vpc.public_subnet_id["web-subnet-01"], module.vpc.public_subnet_id["web-subnet-02"], module.vpc.public_subnet_id["web-subnet-03"]]
+    subnet_id         = [module.vpc.private_subnet_id["web-subnet-01"], module.vpc.private_subnet_id["web-subnet-02"], module.vpc.private_subnet_id["web-subnet-03"]]
     security_group_id = [module.vpc.sg_id["web-sg"]]
     default_cert_arn  = "" //insert cert ARN from ACM
     default_tg        = "tg-01"

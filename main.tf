@@ -3,6 +3,7 @@ locals {
 }
 
 data "aws_region" "current" {}
+
 resource "aws_lb" "internal" {
   name            = "${local.name-prefix}-${var.alb.name}"
   internal        = true
@@ -10,29 +11,27 @@ resource "aws_lb" "internal" {
   security_groups = var.alb.security_group_id
 }
 
-resource "aws_lb_listener" "internal" {
+resource "aws_lb_listener" "internal_https" {
+  for_each = var.alb_listeners_https
   load_balancer_arn = aws_lb.internal.arn
   protocol          = "HTTPS"
-  port              = "443"
+  port              = each.value.port
   ssl_policy        = "ELBSecurityPolicy-TLS13-1-3-2021-06"
-  certificate_arn   = var.alb.default_cert_arn
+  certificate_arn   = each.value.default_cert_arn
   default_action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.internal_alb[var.alb.default_tg].arn
+    target_group_arn = aws_lb_target_group.internal_alb[each.value.default_tg].arn
   }
 }
 
 resource "aws_lb_listener" "internal_http" {
+  for_each = var.alb_listeners_http
   load_balancer_arn = aws_lb.internal.arn
   protocol          = "HTTP"
-  port              = "80"
+  port              = each.value.port
   default_action {
-    type             = "redirect"
-    redirect {
-      port = "443"
-      protocol = "HTTPS"
-      status_code = "HTTP_301"
-    }
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.internal_alb[each.value.default_tg].arn
   }
 }
 
@@ -58,8 +57,8 @@ module "tg_attach" {
 
 resource "aws_lb_listener_certificate" "alb_internal" {
   for_each        = var.certs_arn
-  listener_arn    = aws_lb_listener.internal.arn
-  certificate_arn = each.value
+  listener_arn    = aws_lb_listener.internal_https[each.value.listener].arn
+  certificate_arn = each.value.cert_arn
 }
 locals {
   forward_rules  = { for k, v in var.rules : k => v if v.action.action_type == "forward" }
@@ -69,7 +68,7 @@ locals {
 module "redirect" {
   for_each         = local.redirect_rules
   source           = "./modules/redirect_rule"
-  alb_listener_arn = aws_lb_listener.internal.arn
+  alb_listener_arn = try(aws_lb_listener.internal_http[each.value.listener].arn, aws_lb_listener.internal_https[each.value.listener].arn)
   priority         = each.value.priority
   condition        = each.value.condition
   redirect         = each.value.action.redirect
@@ -78,7 +77,7 @@ module "redirect" {
 module "forward" {
   for_each         = local.forward_rules
   source           = "./modules/forward_rule"
-  alb_listener_arn = aws_lb_listener.internal.arn
+  alb_listener_arn = try(aws_lb_listener.internal_http[each.value.listener].arn, aws_lb_listener.internal_https[each.value.listener].arn)
   priority         = each.value.priority
   condition        = each.value.condition
   target_group_arn = aws_lb_target_group.internal_alb[each.value.target_group].arn
