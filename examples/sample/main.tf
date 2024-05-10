@@ -20,12 +20,26 @@ module "alb_internal" {
   env    = "dev"
 
   alb = {
-    name              = "frond-end"
-    subnet_id         = [module.vpc.private_subnet_id["web-subnet-01"], module.vpc.private_subnet_id["web-subnet-02"], module.vpc.private_subnet_id["web-subnet-03"]]
-    security_group_id = [module.vpc.sg_id["web-sg"]]
-    default_cert_arn  = "" //insert cert ARN from ACM
-    default_tg        = "tg-01"
+    name              = "backend-end"
+    subnet_id         = [module.vpc.private_subnet_id["app-subnet-01"], module.vpc.private_subnet_id["app-subnet-02"], module.vpc.private_subnet_id["app-subnet-03"]]
+    security_group_id = [module.vpc.sg_id["app-sg"]]
   }
+
+  alb_listeners_http = {
+    http_80 = {
+      port       = 80
+      default_tg = "http-tg-01"
+    }
+  }
+
+  alb_listeners_https = {
+    https_443 = {
+      port             = 443
+      default_cert_arn = "" //insert cert ARN from ACM
+      default_tg       = "https-tg-01"
+    }
+  }
+
   target_groups = {
     tg-01 = {
       vpc_id    = module.vpc.vpc_id
@@ -51,6 +65,7 @@ module "alb_internal" {
   }
   rules = {
     rule-01 = {
+      listener = "https_443"
       priority = 100
       condition = {
         host_header = ["example.com"]
@@ -61,6 +76,7 @@ module "alb_internal" {
       }
     }
     rule-02 = {
+      listener = https_443
       priority = 101
       condition = {
         host_header = ["*.abc.com"]
@@ -75,6 +91,7 @@ module "alb_internal" {
       }
     }
     rule-03 = {
+      listener = https_443
       priority = 103
       condition = {
         host_header = ["example.org"]

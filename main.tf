@@ -12,7 +12,7 @@ resource "aws_lb" "internal" {
 }
 
 resource "aws_lb_listener" "internal_https" {
-  for_each = var.alb_listeners_https
+  for_each          = var.alb_listeners_https
   load_balancer_arn = aws_lb.internal.arn
   protocol          = "HTTPS"
   port              = each.value.port
@@ -25,7 +25,7 @@ resource "aws_lb_listener" "internal_https" {
 }
 
 resource "aws_lb_listener" "internal_http" {
-  for_each = var.alb_listeners_http
+  for_each          = var.alb_listeners_http
   load_balancer_arn = aws_lb.internal.arn
   protocol          = "HTTP"
   port              = each.value.port
@@ -80,5 +80,5 @@ module "forward" {
   alb_listener_arn = try(aws_lb_listener.internal_http[each.value.listener].arn, aws_lb_listener.internal_https[each.value.listener].arn)
   priority         = each.value.priority
   condition        = each.value.condition
-  target_group_arn = aws_lb_target_group.internal_alb[each.value.target_group].arn
+  target_group_arn = aws_lb_target_group.internal_alb[each.value.action.target_group].arn
 }

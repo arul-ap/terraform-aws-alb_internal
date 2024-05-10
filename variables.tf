@@ -22,7 +22,7 @@ variable "alb" {
 variable "alb_listeners_http" {
   description = "Map of listeners for internal ALB to support multiple ports (HTTP)"
   type = map(object({
-    port = number
+    port       = number
     default_tg = string
   }))
 }
@@ -30,9 +30,9 @@ variable "alb_listeners_http" {
 variable "alb_listeners_https" {
   description = "Map of listeners for internal ALB to support multiple ports (HTTPS)"
   type = map(object({
-    port = number
-    default_cert_arn  = string
-    default_tg = string
+    port             = number
+    default_cert_arn = string
+    default_tg       = string
   }))
 }
 
@@ -49,11 +49,11 @@ variable "target_groups" {
 
 variable "certs_arn" {
   description = "Additional Certificates to configure into ALB"
-  type        = map(object({
+  type = map(object({
     listener = string
     cert_arn = string
   }))
-  default     = {}
+  default = {}
 }
 variable "rules" {
   description = "ALB rules"
@@ -61,10 +61,10 @@ variable "rules" {
     listener = string
     priority = number
     condition = object({
-      host_header  = optional(string, null)
-      path_pattern = optional(string, null)
-      http_method  = optional(string, null)
-      source_ip    = optional(string, null)
+      host_header  = optional(list(string), [])
+      path_pattern = optional(list(string), [])
+      http_method  = optional(list(string), [])
+      source_ip    = optional(list(string), [])
     })
     action = object({
       action_type  = string
